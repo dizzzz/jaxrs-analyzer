@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 import static com.sebastian_daschner.jaxrs_analyzer.model.methods.MethodIdentifier.ofNonStatic;
 import static com.sebastian_daschner.jaxrs_analyzer.model.methods.MethodIdentifier.ofStatic;
 
+import javax.ws.rs.core.MediaType;
+
 /**
  * @author Sebastian Daschner
  */
@@ -55,7 +57,8 @@ public class JavaDocParserVisitor extends VoidVisitorAdapter<Void> {
     @Override
     public void visit(ClassOrInterfaceDeclaration classOrInterface, Void arg) {
         className = calculateClassName(classOrInterface);
-
+        //System.out.println("###1###"+classOrInterface);
+        System.out.println("###parsing###"+className);
         classOrInterface.getComment()
                 .filter(Comment::isJavadocComment)
                 .map(this::toJavaDoc)
@@ -112,11 +115,15 @@ public class JavaDocParserVisitor extends VoidVisitorAdapter<Void> {
     }
 
     private void recordMethodComment(Javadoc javadoc, MethodDeclaration method) {
-        MethodIdentifier identifier = calculateMethodIdentifier(method);
-        String comment = javadoc.getDescription().toText();
-        List<MemberParameterTag> tags = createMethodParameterTags(javadoc, method);
-        Map<Integer, String> responseComments = createResponseComments(javadoc);
-        methodComments.put(identifier, new MethodComment(comment, tags, responseComments, classComments.get(className), isDeprecated(javadoc)));
+        try {
+            MethodIdentifier identifier = calculateMethodIdentifier(method);
+            String comment = javadoc.getDescription().toText();
+            List<MemberParameterTag> tags = createMethodParameterTags(javadoc, method);
+            Map<Integer, String> responseComments = createResponseComments(javadoc);
+            methodComments.put(identifier, new MethodComment(comment, tags, responseComments, classComments.get(className), isDeprecated(javadoc)));
+        } catch (Throwable t) {
+           t.printStackTrace(System.err);
+        }
     }
 
     private List<MemberParameterTag> createMethodParameterTags(Javadoc javadoc, MethodDeclaration method) {
@@ -151,7 +158,11 @@ public class JavaDocParserVisitor extends VoidVisitorAdapter<Void> {
         if (memberValue.getClass().isAssignableFrom(NameExpr.class))
             return memberValue.asNameExpr().getNameAsString();
 
-        throw new IllegalArgumentException(String.format("Javadoc param type (%s) not supported.", memberValue.toString()));
+        if (memberValue.asFieldAccessExpr().getName().asString().equals("APPLICATION_OCTET_STREAM"))
+            return MediaType.APPLICATION_OCTET_STREAM_TYPE.getSubtype();
+
+        //throw new IllegalArgumentException(String.format("Javadoc param type (%s) not supported.", memberValue.toString()));
+        return "DANNES-" + memberValue.toString();
     }
 
     private Map<Integer, String> createResponseComments(Javadoc javadoc) {

@@ -75,10 +75,16 @@ public class JavaDocAnalyzer {
     }
 
     private MethodResult findMethodResult(final MethodIdentifier identifier, final ClassResult classResult) {
-        if (classResult.getOriginalClass().equals(identifier.getContainingClass()))
-            return classResult.getMethods().stream()
-                    .filter(methodResult -> equalsSimpleTypeNames(identifier, methodResult))
-                    .findAny().orElse(null);
+
+        try {
+            if (classResult.getOriginalClass().equals(identifier.getContainingClass()))
+                return classResult.getMethods().stream()
+                        .filter(methodResult -> equalsSimpleTypeNames(identifier, methodResult))
+                        .findAny().orElse(null);
+        } catch (Throwable t){
+            t.printStackTrace();
+            return null;
+        }
 
         return classResult.getMethods().stream()
                 .map(MethodResult::getSubResource)
